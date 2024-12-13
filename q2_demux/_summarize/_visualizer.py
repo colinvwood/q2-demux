@@ -63,8 +63,9 @@ def _subsample(fastq_map):
 def _compute_stats_of_df(df):
     df_stats = df.describe(
         percentiles=[0.02, 0.09, 0.25, 0.5, 0.75, 0.91, 0.98])
-    drop_cols = df_stats.index.isin(['std', 'mean', 'min', 'max'])
-    df_stats = df_stats[~drop_cols]
+    drop_rows = df_stats.index.isin(['std', 'mean', 'min', 'max'])
+    df_stats = df_stats[~drop_rows]
+
     return df_stats
 
 
@@ -188,6 +189,9 @@ def summarize(output_dir: str, data: _PlotQualView, n: int = 10000) -> None:
 
         scores = pd.DataFrame(quality_scores)
         if not scores.empty:
+            # ensure base positions begin from 1
+            scores.columns = range(1, len(scores.columns) + 1)
+
             stats = _compute_stats_of_df(scores)
             stats.to_csv(
                 os.path.join(output_dir,
