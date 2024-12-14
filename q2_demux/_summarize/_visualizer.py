@@ -200,7 +200,6 @@ def summarize(output_dir: str, data: _PlotQualView, n: int = 10000) -> None:
                              '%s-seven-number-summaries.tsv' % (direction,)),
                 header=True, index=True, sep='\t')
 
-
             length_table = _build_seq_len_table(scores)
             qual_stats[direction] = stats
 
