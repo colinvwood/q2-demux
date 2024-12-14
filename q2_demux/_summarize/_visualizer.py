@@ -189,14 +189,18 @@ def summarize(output_dir: str, data: _PlotQualView, n: int = 10000) -> None:
 
         scores = pd.DataFrame(quality_scores)
         if not scores.empty:
-            # ensure base positions begin from 1
-            scores.columns = range(1, len(scores.columns) + 1)
-
             stats = _compute_stats_of_df(scores)
-            stats.to_csv(
+
+            # ensure base positions begin from 1
+            stats_output = stats.copy()
+            stats_output.columns = range(1, len(stats_output.columns) + 1)
+
+            stats_output.to_csv(
                 os.path.join(output_dir,
                              '%s-seven-number-summaries.tsv' % (direction,)),
                 header=True, index=True, sep='\t')
+
+
             length_table = _build_seq_len_table(scores)
             qual_stats[direction] = stats
 
