@@ -145,6 +145,23 @@ body {
   fill: #1f4f68;
 }
 
+.proportion-axis,
+.proportion-label {
+  stroke: #8d4e24;
+}
+
+.proportion-label {
+  fill: #8d4e24;
+  stroke: none;
+}
+
+.proportion-point {
+  fill: #8d4e24;
+  pointer-events: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
 .selection {
   fill: rgba(47, 111, 143, 0.16);
   stroke: #2f6f8f;
