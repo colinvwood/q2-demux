@@ -164,7 +164,7 @@
     }));
     svg.appendChild(textEl('Occurrence count', {
       class: 'axis-label',
-      transform: 'translate(16 ' + (MARGIN.top + INNER_HEIGHT / 2) +
+      transform: 'translate(10 ' + (MARGIN.top + INNER_HEIGHT / 2) +
         ') rotate(-90)',
       'text-anchor': 'middle'
     }));
@@ -215,7 +215,7 @@
     var end = state.end;
     var visiblePositions = Math.max(1, end - start + 1);
     var maxCount = Math.max(1, maxVisibleCount(counts, start, end));
-    var xScale = makeScale(start - 0.5, end + 0.5, MARGIN.left,
+    var xScale = makeScale(start - 0.65, end + 0.65, MARGIN.left,
       MARGIN.left + INNER_WIDTH);
     var yScale = makeScale(0, maxCount, MARGIN.top + INNER_HEIGHT,
       MARGIN.top);

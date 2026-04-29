@@ -145,13 +145,8 @@ body {
   fill: #1f4f68;
 }
 
-.proportion-axis,
 .proportion-label {
-  stroke: #8d4e24;
-}
-
-.proportion-label {
-  fill: #8d4e24;
+  fill: #344150;
   stroke: none;
 }
 
