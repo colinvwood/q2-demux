@@ -10,6 +10,7 @@ from q2_demux._demux import (emp_single, emp_paired, partition_samples_single,
                              partition_samples_paired)
 from q2_demux._subsample import subsample_single, subsample_paired
 from q2_demux._summarize import summarize
+from q2_demux._subsequence import subsequence_position_plot
 from q2_demux._filter import filter_samples
 from q2_demux._tabulate import tabulate_read_counts
 
@@ -20,4 +21,5 @@ except ModuleNotFoundError:
 
 __all__ = ['emp_single', 'emp_paired', 'partition_samples_single',
            'partition_samples_paired', 'summarize', 'subsample_single',
-           'subsample_paired', 'filter_samples', 'tabulate_read_counts']
+           'subsample_paired', 'subsequence_position_plot',
+           'filter_samples', 'tabulate_read_counts']

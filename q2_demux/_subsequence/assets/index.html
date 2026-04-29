@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subsequence position counts</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>Subsequence position counts</h1>
+      <p>
+        Occurrences of <code>{{ subsequences }}</code> by 1-based read
+        position.
+      </p>
+    </header>
+
+    <section id="kmer-control" class="kmer-control"></section>
+    <section id="plots"></section>
+  </main>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+
+  <script src="./data.js"></script>
+  <script src="./subsequence-plot.js"></script>
+</body>
+</html>

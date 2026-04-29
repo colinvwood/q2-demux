@@ -1,0 +1,190 @@
+body {
+  color: #17212b;
+  font-family: Helvetica, Arial, sans-serif;
+  margin: 0;
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px;
+}
+
+.page-header {
+  border-bottom: 1px solid #d6dde5;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+}
+
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.page-header p {
+  color: #536170;
+  font-size: 15px;
+  margin: 0;
+}
+
+.plot-panel {
+  border: 1px solid #d6dde5;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  padding: 18px;
+}
+
+.kmer-control {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.kmer-control label {
+  color: #344150;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kmer-control select {
+  border: 1px solid #b9c3cf;
+  border-radius: 4px;
+  color: #17212b;
+  font-size: 14px;
+  min-width: 160px;
+  padding: 6px 8px;
+}
+
+.plot-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.plot-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.plot-header p {
+  color: #536170;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.plot-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plot-controls label {
+  color: #344150;
+  font-size: 13px;
+}
+
+.plot-controls input {
+  border: 1px solid #b9c3cf;
+  border-radius: 4px;
+  font-size: 13px;
+  padding: 5px 7px;
+  width: 76px;
+}
+
+.plot-controls button {
+  background: #2f6f8f;
+  border: 1px solid #2f6f8f;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.plot-controls button.secondary {
+  background: #fff;
+  color: #2f6f8f;
+}
+
+.plot-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.plot {
+  display: block;
+  height: auto;
+  min-height: 340px;
+  width: 100%;
+}
+
+.axis,
+.tick {
+  stroke: #7b8794;
+  stroke-width: 1;
+}
+
+.axis-label,
+.tick-label {
+  fill: #344150;
+  font-size: 12px;
+}
+
+.bar {
+  fill: #2f6f8f;
+}
+
+.bar:hover {
+  fill: #1f4f68;
+}
+
+.selection {
+  fill: rgba(47, 111, 143, 0.16);
+  stroke: #2f6f8f;
+  stroke-dasharray: 4 3;
+}
+
+.empty-state {
+  color: #536170;
+  font-size: 14px;
+  margin: 12px 0 0;
+}
+
+.download {
+  display: inline-block;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.tooltip {
+  background: #17212b;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 8px 10px;
+  pointer-events: none;
+  position: fixed;
+  z-index: 10;
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding: 16px;
+  }
+
+  .plot-header {
+    display: block;
+  }
+
+  .plot-controls {
+    margin-top: 12px;
+  }
+}

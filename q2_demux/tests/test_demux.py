@@ -25,13 +25,17 @@ from q2_types.multiplexed_sequences import (
 from qiime2.plugin.testing import TestPluginBase, assert_no_nans_in_tables
 
 from q2_demux import (emp_single, emp_paired, partition_samples_single,
-                      partition_samples_paired, summarize)
+                      partition_samples_paired, summarize,
+                      subsequence_position_plot)
 from q2_types.per_sample_sequences import (
     FastqGzFormat, FastqManifestFormat,
     SingleLanePerSampleSingleEndFastqDirFmt,
     SingleLanePerSamplePairedEndFastqDirFmt)
 from q2_demux._summarize._visualizer import (_PlotQualView,
                                              _decode_qual_to_phred33)
+from q2_demux._subsequence._visualizer import (
+    _count_subsequence_positions, _normalize_subsequence,
+    _normalize_subsequences)
 
 
 class TestBase(TestPluginBase):
@@ -1461,6 +1465,146 @@ class SummarizeTests(TestPluginBase):
             summarize(output_dir, _PlotQualView(empty, paired=True), n=1)
         # Checkpoint assertion
         self.assertTrue(True)
+
+
+class SubsequencePositionPlotTests(TestPluginBase):
+    package = 'q2_demux.tests'
+
+    def setUp(self):
+        super().setUp()
+        self.barcodes = [('@s1/2 abc/2', 'AAAA', '+', 'YYYY'),
+                         ('@s2/2 abc/2', 'AAAA', '+', 'PPPP'),
+                         ('@s3/2 abc/2', 'AAAA', '+', 'PPPP'),
+                         ('@s4/2 abc/2', 'AACC', '+', 'PPPP')]
+        self.sequences = [('@s1/1 abc/1', 'GGG', '+', 'YYY'),
+                          ('@s2/1 abc/1', 'CCCGGG', '+', 'PPPPPP'),
+                          ('@s3/1 abc/1', 'AAA', '+', 'PPP'),
+                          ('@s4/1 abc/1', 'TTT', '+', 'PPP')]
+
+    def _load_data_js(self, output_dir):
+        with open(os.path.join(output_dir, 'data.js'), 'r') as fh:
+            data_js = fh.read()
+        prefix = 'window.subsequencePositionData = '
+        self.assertTrue(data_js.startswith(prefix))
+        self.assertTrue(data_js.endswith(';'))
+        return json.loads(data_js[len(prefix):-1])
+
+    def test_count_subsequence_positions_counts_overlaps(self):
+        counts, reads, reads_with_match, max_read_length = \
+            _count_subsequence_positions(['GGGG', 'AGGG', 'TTT'],
+                                         ['GGG', 'TT'])
+
+        self.assertEqual(counts['GGG'], {1: 1, 2: 2})
+        self.assertEqual(counts['TT'], {1: 1, 2: 1})
+        self.assertEqual(reads, 3)
+        self.assertEqual(reads_with_match['GGG'], 2)
+        self.assertEqual(reads_with_match['TT'], 1)
+        self.assertEqual(max_read_length, 4)
+
+    def test_normalize_subsequence(self):
+        self.assertEqual(_normalize_subsequence(' gGg '), 'GGG')
+
+        with self.assertRaisesRegex(ValueError, 'at least one character'):
+            _normalize_subsequence('  ')
+
+        with self.assertRaisesRegex(ValueError, 'whitespace'):
+            _normalize_subsequence('GG G')
+
+    def test_normalize_subsequences(self):
+        self.assertEqual(_normalize_subsequences([' gGg ', 'aaa']),
+                         ['GGG', 'AAA'])
+
+        with self.assertRaisesRegex(ValueError, 'unique'):
+            _normalize_subsequences(['GGG', 'ggg'])
+
+    def test_basic(self):
+        bsi = BarcodeSequenceFastqIterator(self.barcodes, self.sequences)
+        barcode_map = pd.Series(
+            ['AAAA', 'AACC'], name='bc',
+            index=pd.Index(['sample_1', 'sample2'], name='id')
+        )
+        barcode_map = qiime2.CategoricalMetadataColumn(barcode_map)
+
+        demux_data, _ = emp_single(bsi, barcode_map,
+                                   golay_error_correction=False)
+
+        with tempfile.TemporaryDirectory() as output_dir:
+            result = subsequence_position_plot(
+                output_dir, _PlotQualView(demux_data, paired=False),
+                ['GGG', 'AAA'])
+
+            self.assertTrue(result is None)
+            self.assertTrue(os.path.exists(
+                os.path.join(output_dir, 'index.html')))
+            self.assertTrue(os.path.exists(
+                os.path.join(output_dir, 'subsequence-plot.js')))
+            self.assertTrue(os.path.exists(
+                os.path.join(output_dir, 'style.css')))
+
+            tsv_fp = os.path.join(
+                output_dir, 'kmer-1-forward-subsequence-position-counts.tsv')
+            self.assertTrue(os.path.exists(tsv_fp))
+            with open(tsv_fp, 'r') as fh:
+                tsv = fh.read()
+            self.assertIn('position\tcount\tproportion\n', tsv)
+            self.assertIn('1\t1\t0.500000\n', tsv)
+            self.assertIn('4\t1\t0.500000\n', tsv)
+
+            data = self._load_data_js(output_dir)
+            self.assertEqual(
+                [item['sequence'] for item in data['subsequences']],
+                ['GGG', 'AAA'])
+            forward = data['subsequences'][0]['directions'][0]
+            self.assertEqual(forward['direction'], 'forward')
+            self.assertEqual(
+                forward['countsFilename'],
+                'kmer-1-forward-subsequence-position-counts.tsv')
+            self.assertEqual(forward['totalReads'], 4)
+            self.assertEqual(forward['readsWithMatch'], 2)
+            self.assertEqual(forward['totalOccurrences'], 2)
+            self.assertEqual(forward['maxPosition'], 4)
+            self.assertEqual(forward['counts'],
+                             [{'position': 1, 'count': 1},
+                              {'position': 4, 'count': 1}])
+            aaa = data['subsequences'][1]['directions'][0]
+            self.assertEqual(aaa['totalOccurrences'], 1)
+            self.assertEqual(aaa['counts'], [{'position': 1, 'count': 1}])
+
+    def test_paired_end(self):
+        forward = self.sequences[:3]
+        reverse = [('@s1/1 abc/1', 'CCC', '+', 'YYY'),
+                   ('@s2/1 abc/1', 'GGG', '+', 'PPP'),
+                   ('@s3/1 abc/1', 'TTTGGG', '+', 'PPPPPP')]
+        bpsi = BarcodePairedSequenceFastqIterator(self.barcodes[:3],
+                                                  forward, reverse)
+        barcode_map = pd.Series(
+            ['AAAA'], name='bc',
+            index=pd.Index(['sample1'], name='id')
+        )
+        barcode_map = qiime2.CategoricalMetadataColumn(barcode_map)
+
+        demux_data, _ = emp_paired(bpsi, barcode_map,
+                                   golay_error_correction=False)
+
+        with tempfile.TemporaryDirectory() as output_dir:
+            subsequence_position_plot(
+                output_dir, _PlotQualView(demux_data, paired=True), ['GGG'])
+
+            data = self._load_data_js(output_dir)
+            directions = {
+                item['direction']: item
+                for item in data['subsequences'][0]['directions']
+            }
+
+            self.assertEqual(set(directions), {'forward', 'reverse'})
+            self.assertEqual(directions['forward']['totalOccurrences'], 2)
+            self.assertEqual(directions['reverse']['totalOccurrences'], 2)
+            self.assertEqual(directions['forward']['counts'],
+                             [{'position': 1, 'count': 1},
+                              {'position': 4, 'count': 1}])
+            self.assertEqual(directions['reverse']['counts'],
+                             [{'position': 1, 'count': 1},
+                              {'position': 4, 'count': 1}])
 
 
 if __name__ == '__main__':

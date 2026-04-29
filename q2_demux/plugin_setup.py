@@ -207,6 +207,30 @@ plugin.visualizers.register_function(
     examples={'demux': ex.summarize}
 )
 
+plugin.visualizers.register_function(
+    function=q2_demux.subsequence_position_plot,
+    inputs={'data':
+            SampleData[SequencesWithQuality |
+                       PairedEndSequencesWithQuality |
+                       JoinedSequencesWithQuality]},
+    parameters={'subsequences': List[Str]},
+    input_descriptions={
+        'data': 'The demultiplexed sequences to be searched.'
+    },
+    parameter_descriptions={
+        'subsequences': ('One or more exact subsequences to count at each '
+                         '1-based read position. Matching is '
+                         'case-insensitive and overlapping occurrences are '
+                         'counted.')
+    },
+    name='Visualize subsequence occurrence positions.',
+    description=('Generate interactive per-position histograms showing where '
+                 'an exact subsequence occurs across demultiplexed reads. If '
+                 'input sequences are paired end, separate plots are '
+                 'generated for forward and reverse reads.'),
+    examples={}
+)
+
 plugin.methods.register_function(
     function=q2_demux.tabulate_read_counts,
     inputs={'sequences':
