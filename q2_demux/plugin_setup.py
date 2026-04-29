@@ -213,7 +213,10 @@ plugin.visualizers.register_function(
             SampleData[SequencesWithQuality |
                        PairedEndSequencesWithQuality |
                        JoinedSequencesWithQuality]},
-    parameters={'subsequences': List[Str]},
+    parameters={'subsequences': List[Str],
+                'subsample': Float % Range(0, 1,
+                                           inclusive_start=False,
+                                           inclusive_end=True)},
     input_descriptions={
         'data': 'The demultiplexed sequences to be searched.'
     },
@@ -221,7 +224,10 @@ plugin.visualizers.register_function(
         'subsequences': ('One or more exact subsequences to count at each '
                          '1-based read position. Matching is '
                          'case-insensitive and overlapping occurrences are '
-                         'counted.')
+                         'counted.'),
+        'subsample': ('The fraction of reads to randomly include from each '
+                      'sample. This can improve performance on large '
+                      'datasets. Defaults to 1.0, which includes all reads.')
     },
     name='Visualize subsequence occurrence positions.',
     description=('Generate interactive per-position histograms showing where '

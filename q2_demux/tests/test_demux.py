@@ -35,7 +35,7 @@ from q2_demux._summarize._visualizer import (_PlotQualView,
                                              _decode_qual_to_phred33)
 from q2_demux._subsequence._visualizer import (
     _count_subsequence_positions, _normalize_subsequence,
-    _normalize_subsequences)
+    _normalize_subsequences, _validate_subsample)
 
 
 class TestBase(TestPluginBase):
@@ -1517,6 +1517,16 @@ class SubsequencePositionPlotTests(TestPluginBase):
         with self.assertRaisesRegex(ValueError, 'unique'):
             _normalize_subsequences(['GGG', 'ggg'])
 
+    def test_validate_subsample(self):
+        self.assertEqual(_validate_subsample(0.1), 0.1)
+        self.assertEqual(_validate_subsample(1.0), 1.0)
+
+        with self.assertRaisesRegex(ValueError, 'greater than 0'):
+            _validate_subsample(0)
+
+        with self.assertRaisesRegex(ValueError, 'no more than 1'):
+            _validate_subsample(1.1)
+
     def test_basic(self):
         bsi = BarcodeSequenceFastqIterator(self.barcodes, self.sequences)
         barcode_map = pd.Series(
@@ -1551,6 +1561,7 @@ class SubsequencePositionPlotTests(TestPluginBase):
             self.assertIn('4\t1\t0.250000\n', tsv)
 
             data = self._load_data_js(output_dir)
+            self.assertEqual(data['subsample'], 1.0)
             self.assertEqual(
                 [item['sequence'] for item in data['subsequences']],
                 ['GGG', 'AAA'])

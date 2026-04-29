@@ -57,6 +57,11 @@ body {
   padding: 6px 8px;
 }
 
+.subsample-note {
+  color: #536170;
+  font-size: 14px;
+}
+
 .plot-header {
   align-items: flex-start;
   display: flex;

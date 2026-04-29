@@ -465,6 +465,7 @@
     var control = document.getElementById('kmer-control');
     var label = document.createElement('label');
     var select = document.createElement('select');
+    var note = document.createElement('span');
 
     label.htmlFor = 'kmer-select';
     label.textContent = 'K-mer';
@@ -483,6 +484,12 @@
 
     control.appendChild(label);
     control.appendChild(select);
+
+    if (data.subsample < 1) {
+      note.className = 'subsample-note';
+      note.textContent = 'Subsample: ' + formatPercent(data.subsample);
+      control.appendChild(note);
+    }
   }
 
   function init() {

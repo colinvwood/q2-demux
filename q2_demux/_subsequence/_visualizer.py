@@ -10,6 +10,7 @@ import collections
 import importlib
 import json
 import os
+import random
 import shutil
 
 import pandas as pd
@@ -50,6 +51,13 @@ def _normalize_subsequences(subsequences):
         raise ValueError('subsequence must contain at least one value.')
 
     return normalized
+
+
+def _validate_subsample(subsample):
+    if subsample <= 0 or subsample > 1:
+        raise ValueError(
+            'subsample must be greater than 0 and no more than 1.')
+    return subsample
 
 
 def _count_subsequence_positions(sequences, subsequences):
@@ -94,10 +102,11 @@ def _iter_manifest_fastq_paths(manifest, direction):
         yield filename
 
 
-def _iter_fastq_sequences(paths):
+def _iter_fastq_sequences(paths, subsample):
     for path in paths:
         for record in read_fastq_seqs(path):
-            yield record[1]
+            if subsample == 1 or random.random() < subsample:
+                yield record[1]
 
 
 def _direction_payload(direction, counts, reads, reads_with_match,
@@ -141,12 +150,13 @@ def _write_counts_tsv(output_dir, direction_data):
             fh.write('%d\t%d\t%.6f\n' % (position, count, proportion))
 
 
-def _compute_subsequence_position_data(data, subsequences):
+def _compute_subsequence_position_data(data, subsequences, subsample):
     data = data.directory_format
     manifest = data.manifest.view(pd.DataFrame)
     directions = list(manifest.columns)
 
     result = {
+        'subsample': subsample,
         'subsequences': [
             {
                 'id': 'kmer-%d' % (index + 1),
@@ -159,7 +169,7 @@ def _compute_subsequence_position_data(data, subsequences):
 
     for direction in directions:
         paths = _iter_manifest_fastq_paths(manifest, direction)
-        sequences = _iter_fastq_sequences(paths)
+        sequences = _iter_fastq_sequences(paths, subsample)
         counts, reads, reads_with_match, max_read_length = \
             _count_subsequence_positions(sequences, subsequences)
 
@@ -178,13 +188,15 @@ def _compute_subsequence_position_data(data, subsequences):
 
 
 def subsequence_position_plot(output_dir: str, data: _PlotQualView,
-                              subsequences: list) -> None:
+                              subsequences: list,
+                              subsample: float = 1.0) -> None:
     subsequences = _normalize_subsequences(subsequences)
+    subsample = _validate_subsample(subsample)
     context = {
         'subsequences': ', '.join(subsequences),
     }
 
-    result = _compute_subsequence_position_data(data, subsequences)
+    result = _compute_subsequence_position_data(data, subsequences, subsample)
 
     template = os.path.join(TEMPLATES, 'assets', 'index.html')
     q2templates.render(template, output_dir, context=context)
