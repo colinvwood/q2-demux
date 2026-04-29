@@ -1490,9 +1490,9 @@ class SubsequencePositionPlotTests(TestPluginBase):
         return json.loads(data_js[len(prefix):-1])
 
     def test_count_subsequence_positions_counts_overlaps(self):
-        (counts, reads, reads_with_match, max_read_length,
-         read_length_counts) = _count_subsequence_positions(
-             ['GGGG', 'AGGG', 'TTT'], ['GGG', 'TT'])
+        counts, reads, reads_with_match, max_read_length = \
+            _count_subsequence_positions(['GGGG', 'AGGG', 'TTT'],
+                                         ['GGG', 'TT'])
 
         self.assertEqual(counts['GGG'], {1: 1, 2: 2})
         self.assertEqual(counts['TT'], {1: 1, 2: 1})
@@ -1500,7 +1500,6 @@ class SubsequencePositionPlotTests(TestPluginBase):
         self.assertEqual(reads_with_match['GGG'], 2)
         self.assertEqual(reads_with_match['TT'], 1)
         self.assertEqual(max_read_length, 4)
-        self.assertEqual(read_length_counts, {3: 1, 4: 2})
 
     def test_normalize_subsequence(self):
         self.assertEqual(_normalize_subsequence(' gGg '), 'GGG')
@@ -1547,10 +1546,9 @@ class SubsequencePositionPlotTests(TestPluginBase):
             self.assertTrue(os.path.exists(tsv_fp))
             with open(tsv_fp, 'r') as fh:
                 tsv = fh.read()
-            self.assertIn(
-                'position\tcount\tposition-read-count\tproportion\n', tsv)
-            self.assertIn('1\t1\t4\t0.250000\n', tsv)
-            self.assertIn('4\t1\t1\t1.000000\n', tsv)
+            self.assertIn('position\tcount\tproportion\n', tsv)
+            self.assertIn('1\t1\t0.250000\n', tsv)
+            self.assertIn('4\t1\t0.250000\n', tsv)
 
             data = self._load_data_js(output_dir)
             self.assertEqual(
@@ -1565,11 +1563,6 @@ class SubsequencePositionPlotTests(TestPluginBase):
             self.assertEqual(forward['readsWithMatch'], 2)
             self.assertEqual(forward['totalOccurrences'], 2)
             self.assertEqual(forward['maxPosition'], 4)
-            self.assertEqual(forward['positionReadCounts'],
-                             [{'position': 1, 'readCount': 4},
-                              {'position': 2, 'readCount': 1},
-                              {'position': 3, 'readCount': 1},
-                              {'position': 4, 'readCount': 1}])
             self.assertEqual(forward['counts'],
                              [{'position': 1, 'count': 1},
                               {'position': 4, 'count': 1}])

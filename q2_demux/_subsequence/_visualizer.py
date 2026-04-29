@@ -63,12 +63,10 @@ def _count_subsequence_positions(sequences, subsequences):
     }
     reads = 0
     max_read_length = 0
-    read_length_counts = collections.Counter()
 
     for sequence in sequences:
         sequence = sequence.upper()
         reads += 1
-        read_length_counts[len(sequence)] += 1
         max_read_length = max(max_read_length, len(sequence))
 
         for subsequence in subsequences:
@@ -82,22 +80,7 @@ def _count_subsequence_positions(sequences, subsequences):
             if found_in_read:
                 reads_with_match[subsequence] += 1
 
-    return counts, reads, reads_with_match, max_read_length, read_length_counts
-
-
-def _read_counts_by_start_position(read_length_counts, subsequence,
-                                   max_read_length):
-    max_start_position = max(0, max_read_length - len(subsequence) + 1)
-    position_read_counts = collections.Counter()
-
-    for position in range(1, max_start_position + 1):
-        min_read_length = position + len(subsequence) - 1
-        position_read_counts[position] = sum(
-            count
-            for length, count in read_length_counts.items()
-            if length >= min_read_length)
-
-    return position_read_counts
+    return counts, reads, reads_with_match, max_read_length
 
 
 def _iter_manifest_fastq_paths(manifest, direction):
@@ -118,8 +101,7 @@ def _iter_fastq_sequences(paths):
 
 
 def _direction_payload(direction, counts, reads, reads_with_match,
-                       max_read_length, subsequence, counts_filename,
-                       position_read_counts):
+                       max_read_length, subsequence, counts_filename):
     max_start_position = max(0, max_read_length - len(subsequence) + 1)
     total_occurrences = sum(counts.values())
 
@@ -132,13 +114,6 @@ def _direction_payload(direction, counts, reads, reads_with_match,
                 'count': counts[position],
             }
             for position in sorted(counts)
-        ],
-        'positionReadCounts': [
-            {
-                'position': position,
-                'readCount': position_read_counts[position],
-            }
-            for position in range(1, max_start_position + 1)
         ],
         'maxPosition': max_start_position,
         'maxReadLength': max_read_length,
@@ -157,16 +132,13 @@ def _write_counts_tsv(output_dir, direction_data):
     }
 
     with open(path, 'w') as fh:
-        fh.write('position\tcount\tposition-read-count\tproportion\n')
+        fh.write('position\tcount\tproportion\n')
         for position in range(1, direction_data['maxPosition'] + 1):
             count = counts.get(position, 0)
-            read_count = direction_data['positionReadCounts'][position - 1][
-                'readCount']
             proportion = 0
-            if read_count > 0:
-                proportion = count / read_count
-            fh.write('%d\t%d\t%d\t%.6f\n' %
-                     (position, count, read_count, proportion))
+            if direction_data['totalReads'] > 0:
+                proportion = count / direction_data['totalReads']
+            fh.write('%d\t%d\t%.6f\n' % (position, count, proportion))
 
 
 def _compute_subsequence_position_data(data, subsequences):
@@ -188,14 +160,11 @@ def _compute_subsequence_position_data(data, subsequences):
     for direction in directions:
         paths = _iter_manifest_fastq_paths(manifest, direction)
         sequences = _iter_fastq_sequences(paths)
-        (counts, reads, reads_with_match, max_read_length,
-         read_length_counts) = _count_subsequence_positions(
-             sequences, subsequences)
+        counts, reads, reads_with_match, max_read_length = \
+            _count_subsequence_positions(sequences, subsequences)
 
         for subsequence_data in result['subsequences']:
             subsequence = subsequence_data['sequence']
-            position_read_counts = _read_counts_by_start_position(
-                read_length_counts, subsequence, max_read_length)
             counts_filename = (
                 '%s-%s-subsequence-position-counts.tsv' %
                 (subsequence_data['id'], direction))
@@ -203,7 +172,7 @@ def _compute_subsequence_position_data(data, subsequences):
                 _direction_payload(
                     direction, counts[subsequence], reads,
                     reads_with_match[subsequence], max_read_length,
-                    subsequence, counts_filename, position_read_counts))
+                    subsequence, counts_filename))
 
     return result
 

@@ -46,22 +46,6 @@
     return counts;
   }
 
-  function readCountByPosition(directionData) {
-    var readCounts = {};
-    directionData.positionReadCounts.forEach(function (item) {
-      readCounts[item.position] = item.readCount;
-    });
-    return readCounts;
-  }
-
-  function proportionAtPosition(counts, readCounts, position) {
-    var readCount = readCounts[position] || 0;
-    if (readCount === 0) {
-      return 0;
-    }
-    return (counts[position] || 0) / readCount;
-  }
-
   function maxVisibleCount(counts, start, end) {
     var maxCount = 0;
     for (var position = start; position <= end; position += 1) {
@@ -93,16 +77,7 @@
     return ticks;
   }
 
-  function proportionTicks() {
-    var ticks = [];
-    for (var i = 0; i <= 4; i += 1) {
-      ticks.push(i / 4);
-    }
-    return ticks;
-  }
-
-  function drawAxes(svg, start, end, maxCount, xScale, yScale,
-    proportionScale) {
+  function drawAxes(svg, start, end, maxCount, totalReads, xScale, yScale) {
     var x0 = MARGIN.left;
     var x1 = MARGIN.left + INNER_WIDTH;
     var y0 = MARGIN.top + INNER_HEIGHT;
@@ -163,8 +138,9 @@
       }));
     });
 
-    proportionTicks().forEach(function (tick) {
-      var y = proportionScale(tick);
+    niceTicks(0, maxCount, 6).forEach(function (tick) {
+      var y = yScale(tick);
+      var proportion = totalReads > 0 ? tick / totalReads : 0;
       svg.appendChild(svgEl('line', {
         class: 'tick proportion-axis',
         x1: x1,
@@ -172,7 +148,7 @@
         y1: y,
         y2: y
       }));
-      svg.appendChild(textEl(formatPercent(tick), {
+      svg.appendChild(textEl(formatPercent(proportion), {
         class: 'tick-label proportion-label',
         x: x1 + 10,
         y: y + 4,
@@ -206,17 +182,16 @@
     }
   }
 
-  function showTooltip(event, kmer, position, count, readCount) {
+  function showTooltip(event, kmer, directionData, position, count) {
     var tooltip = document.getElementById('tooltip');
     var proportion = 0;
-    if (readCount > 0) {
-      proportion = count / readCount;
+    if (directionData.totalReads > 0) {
+      proportion = count / directionData.totalReads;
     }
     tooltip.innerHTML = [
       '<strong>' + kmer + '</strong>',
       '<strong>Position ' + position + '</strong>',
       'Count: ' + count,
-      'Reads at position: ' + readCount,
       'Proportion: ' + formatPercent(proportion)
     ].join('<br>');
     tooltip.hidden = false;
@@ -233,27 +208,9 @@
     document.getElementById('tooltip').hidden = true;
   }
 
-  function drawProportions(svg, counts, readCounts, start, end, xScale,
-    proportionScale) {
-    for (var position = start; position <= end; position += 1) {
-      if (!counts[position]) {
-        continue;
-      }
-
-      svg.appendChild(svgEl('circle', {
-        class: 'proportion-point',
-        cx: xScale(position),
-        cy: proportionScale(
-          proportionAtPosition(counts, readCounts, position)),
-        r: 3
-      }));
-    }
-  }
-
   function renderPlot(panel, directionData, state) {
     var svg = panel.querySelector('svg');
     var counts = countByPosition(directionData);
-    var readCounts = readCountByPosition(directionData);
     var start = state.start;
     var end = state.end;
     var visiblePositions = Math.max(1, end - start + 1);
@@ -262,16 +219,14 @@
       MARGIN.left + INNER_WIDTH);
     var yScale = makeScale(0, maxCount, MARGIN.top + INNER_HEIGHT,
       MARGIN.top);
-    var proportionScale = makeScale(0, 1,
-      MARGIN.top + INNER_HEIGHT, MARGIN.top);
     var barWidth = Math.max(1, INNER_WIDTH / visiblePositions - 1);
 
     while (svg.firstChild) {
       svg.removeChild(svg.firstChild);
     }
 
-    drawAxes(svg, start, end, maxCount, xScale, yScale,
-      proportionScale);
+    drawAxes(svg, start, end, maxCount, directionData.totalReads, xScale,
+      yScale);
 
     for (var position = start; position <= end; position += 1) {
       var count = counts[position] || 0;
@@ -289,18 +244,16 @@
         tabindex: 0
       });
 
-      (function (pos, value, readCount) {
+      (function (pos, value) {
         bar.addEventListener('mousemove', function (event) {
-          showTooltip(event, state.sequence, pos, value, readCount);
+          showTooltip(event, state.sequence, directionData, pos, value);
         });
         bar.addEventListener('mouseleave', hideTooltip);
-      }(position, count, readCounts[position] || 0));
+      }(position, count));
 
       svg.appendChild(bar);
     }
 
-    drawProportions(svg, counts, readCounts, start, end, xScale,
-      proportionScale);
     addDragZoom(svg, directionData, state, panel);
   }
 
